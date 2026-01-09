@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using HarmonyLib;
 using Unity.Collections;
+using Unity.Netcode;
 
 namespace ToasterHeresMyMods;
 
@@ -139,6 +140,14 @@ public static class PlayerSubscriptionPatch
         {
             Plugin.Log($"Enabled mods by {username.ToString()}: " +
                        $"{(enabledModIds.Length == 0 ? "None" : $"{steamId.ToString()}: {string.Join(", ", enabledModIds)}")}");
+
+            // Check for blacklisted mods (only on server side)
+            if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsServer)
+            {
+                ulong parsedSteamId = 0;
+                ulong.TryParse(steamId.ToString(), out parsedSteamId);
+                BlacklistManager.CheckPlayerMods(__instance.OwnerClientId, parsedSteamId, username.ToString(), enabledModIds);
+            }
 
             ulong[] enabledModIdsToSearch = enabledModIds.Where((ulong modId) => modId > 2500000000 && !modDetails.ContainsKey(modId)).ToArray();
             playersConnectingWithMods.Add(__instance.OwnerClientId, enabledModIds);

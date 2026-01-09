@@ -22,17 +22,23 @@ public class Plugin : IPuckMod
             if (IsDedicatedServer())
             {
                 Plugin.Log("Environment: dedicated server.");
-                Plugin.Log("Patching methods...");
-                harmony.PatchAll();
-                Plugin.Log($"All patched! Patched methods:");
-                LogAllPatchedMethods();
-                PlayerSubscriptionPatch.Setup();
             }
             else
             {
-                Plugin.Log("Environment: client.");
-                Plugin.Log($"This mod is designed to be used only on dedicated servers!");
+                Plugin.Log("Environment: client-hosted server.");
             }
+            
+            Plugin.Log("Patching methods...");
+            harmony.PatchAll();
+            Plugin.Log($"All patched! Patched methods:");
+            LogAllPatchedMethods();
+            PlayerSubscriptionPatch.Setup();
+            
+            // Initialize blacklist system
+            ConfigManager.LoadConfig();
+            BlacklistManager.Initialize();
+            BlacklistUpdater.Create();
+            Plugin.Log("Blacklist system initialized.");
             
             Plugin.Log($"Enabled!");
             return true;
@@ -51,6 +57,11 @@ public class Plugin : IPuckMod
             Plugin.Log($"Disabling...");
             harmony.UnpatchSelf();
             PlayerSubscriptionPatch.Destroy();
+            
+            // Shutdown blacklist system
+            BlacklistManager.Shutdown();
+            BlacklistUpdater.Destroy();
+            
             Plugin.Log($"Disabled! Goodbye!");
             return true;
         }
